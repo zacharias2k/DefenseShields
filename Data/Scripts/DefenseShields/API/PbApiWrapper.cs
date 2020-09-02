@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Sandbox.ModAPI.Ingame;
+using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces;
-using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
-
 namespace DefenseShields
 {
     internal class PbApiWrapper

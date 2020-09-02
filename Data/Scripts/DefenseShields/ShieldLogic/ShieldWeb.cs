@@ -29,6 +29,7 @@ namespace DefenseShields
             {
                 EntIntersectInfo removedEnt;
                 WebEnts.TryRemove(webent.Key, out removedEnt);
+                Session.Instance.EntIntersectInfoPool.Return(removedEnt);
                 EnemyShields.Remove(webent.Key);
             }
         }
@@ -164,6 +165,8 @@ namespace DefenseShields
                     relation = protectedEnt.Relation;
                     protectedEnt.LastTick = tick;
                 }
+
+                var grid = ent as MyCubeGrid;
                 switch (relation)
                 {
                     case Ent.Authenticated:
@@ -231,8 +234,13 @@ namespace DefenseShields
                         entChanged = true;
                         _enablePhysics = true;
                         ProtectedEntCache.Remove(ent);
-                        WebEnts.TryAdd(ent, new EntIntersectInfo(false, ent.PositionComp.LocalAABB, tick, tick, tick, relation));
+                        var entIntersectInfo = Session.Instance.EntIntersectInfoPool.Get();
+                        entIntersectInfo.Init(false, ent.PositionComp.LocalAABB, tick, tick, tick, relation);
+                        WebEnts.TryAdd(ent, entIntersectInfo);
                     }
+
+                    if (grid != null && entChanged)
+                        Session.Instance.CheckForSplits[grid] = Session.Instance.Tick;
                 }
                 catch (Exception ex) { Log.Line($"Exception in WebEntities entInfo: {ex}"); }
             }
@@ -241,7 +249,7 @@ namespace DefenseShields
                 return;
             }
 
-            ShieldMatrix = ShieldEnt.PositionComp.WorldMatrix;
+            ShieldMatrix = ShieldEnt.PositionComp.WorldMatrixRef;
             if ((_needPhysics && shieldFound) || !ShieldMatrix.EqualsFast(ref OldShieldMatrix))
             {
                 OldShieldMatrix = ShieldMatrix;
@@ -258,7 +266,7 @@ namespace DefenseShields
             {
                 Asleep = false;
                 LastWokenTick = tick;
-                Session.Instance.WebWrapper.Enqueue(this);
+                Session.Instance.WebWrapper.Add(this);
                 Session.Instance.WebWrapperOn = true;
             }
         }
@@ -333,8 +341,24 @@ namespace DefenseShields
                         else AuthenticatedCache.Add(subGrid);
                     }
                 }
-                var bigOwners = grid.BigOwners;
-                var bigOwnersCnt = bigOwners.Count;
+
+                List<long> bigOwners;
+                int bigOwnersCnt;
+                Session.ParentGrid parent;
+                if (Session.Instance.GetParentGrid.TryGetValue(grid, out parent) && !CustomCollision.AllAabbInShield(parent.Parent.PositionComp.WorldAABB, DetectMatrixOutsideInv, _obbCorners))
+                {
+                    bigOwners = grid.BigOwners;
+                    bigOwnersCnt = bigOwners.Count;
+                    if (bigOwnersCnt == 0 || GridEnemy(grid, bigOwners))
+                        return Ent.EnemyGrid;
+
+                }
+                else {
+                    bigOwners = grid.BigOwners;
+                    bigOwnersCnt = bigOwners.Count;
+                }
+
+
                 if (CustomCollision.AllAabbInShield(ent.PositionComp.WorldAABB, DetectMatrixOutsideInv, _obbCorners)) return Ent.Protected;
                 if (!ModulateGrids && bigOwnersCnt == 0) return Ent.NobodyGrid;
                 var enemy = !ModulateGrids && GridEnemy(grid, bigOwners);

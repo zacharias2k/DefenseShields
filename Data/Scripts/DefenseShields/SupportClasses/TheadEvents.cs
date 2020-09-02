@@ -1,17 +1,13 @@
-﻿using VRage.Game;
+﻿
+using Sandbox.Game.Entities;
 
 namespace DefenseShields.Support
 {
-    using System;
-    using Sandbox.Game;
-    using Sandbox.Game.Entities;
-    using Sandbox.Game.Entities.Character.Components;
     using Sandbox.ModAPI;
     using System.Collections.Generic;
     using VRage.Game.Components;
     using VRage.Game.Entity;
     using VRage.Game.ModAPI;
-    using VRage.Utils;
     using VRageMath;
 
     public interface IThreadEvent
@@ -21,17 +17,25 @@ namespace DefenseShields.Support
 
     public class ShieldVsShieldThreadEvent : IThreadEvent
     {
-        public readonly DefenseShields Shield;
-        public readonly float Damage;
-        public readonly Vector3D CollisionAvg;
-        public readonly long AttackerId;
+        public DefenseShields Shield;
+        public float Damage;
+        public Vector3D CollisionAvg;
+        public long AttackerId;
 
-        public ShieldVsShieldThreadEvent(DefenseShields shield, float damage, Vector3D collisionAvg, long attackerId)
+        public void Init(DefenseShields shield, float damage, Vector3D collisionAvg, long attackerId)
         {
             Shield = shield;
             Damage = damage;
             CollisionAvg = collisionAvg;
             AttackerId = attackerId;
+        }
+
+        public void Clean()
+        {
+            Shield = null;
+            Damage = 0;
+            CollisionAvg = Vector3D.Zero;
+            AttackerId = 0;
         }
 
         public void Execute()
@@ -48,18 +52,25 @@ namespace DefenseShields.Support
             }
             Shield.WebDamage = true;
             Shield.Absorb += Damage;
+            Session.Instance.ShieldEventPool.Return(this);
         }
     }
 
     public class MissileThreadEvent : IThreadEvent
     {
-        public readonly MyEntity Entity;
-        public readonly DefenseShields Shield;
+        public MyEntity Entity;
+        public DefenseShields Shield;
 
-        public MissileThreadEvent(MyEntity entity, DefenseShields shield)
+        public void Init(MyEntity entity, DefenseShields shield)
         {
             Entity = entity;
             Shield = shield;
+        }
+
+        public void Clean()
+        {
+            Entity = null;
+            Shield = null;
         }
 
         public void Execute()
@@ -93,57 +104,64 @@ namespace DefenseShields.Support
             }
             Shield.WebDamage = true;
             Shield.Absorb += damage;
+            Session.Instance.MissilePool.Return(this);
         }
     }
 
     public class FloaterThreadEvent : IThreadEvent
     {
-        public readonly MyEntity Entity;
-        public readonly DefenseShields Shield;
+        public MyEntity Entity;
+        public DefenseShields Shield;
 
-        public FloaterThreadEvent(MyEntity entity, DefenseShields shield)
+        public void Init(MyEntity entity, DefenseShields shield)
         {
             Entity = entity;
             Shield = shield;
         }
 
+        public void Clean()
+        {
+            Entity = null;
+            Shield = null;
+        }
+
         public void Execute()
         {
             if (Entity == null || Entity.MarkedForClose) return;
-            var floater = (IMyFloatingObject)Entity;
-            var entVel = Entity.Physics.LinearVelocity;
-            var movingVel = entVel != Vector3.Zero ? entVel : -Shield.MyGrid.Physics.LinearVelocity;
-
-            var rayDir = Vector3D.Normalize(movingVel);
-            var ray = new RayD(Entity.PositionComp.WorldVolume.Center, rayDir);
-            var intersect = CustomCollision.IntersectEllipsoid(Shield.DetectMatrixOutsideInv, Shield.DetectionMatrix, ray);
-            var hitDist = intersect ?? 0;
-            var hitPos = ray.Position + (ray.Direction * -hitDist);
+            var floater = (MyFloatingObject)Entity;
 
             if (Session.Instance.MpActive)
             {
-                Shield.AddShieldHit(Entity.EntityId, 1, Session.Instance.MPKinetic, null, false, hitPos);
-                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Shield.AddShieldHit(Entity.EntityId, 1, Session.Instance.MPKinetic, null, false, Entity.PositionComp.WorldVolume.Center);
+                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive,  Shield.MyCube.EntityId);
             }
             else
             {
-                Shield.WorldImpactPosition = hitPos;
+                Shield.WorldImpactPosition = Entity.PositionComp.WorldVolume.Center;
                 Shield.ImpactSize = 10;
-                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, false, null, Shield.MyCube.EntityId);
+                floater.DoDamage(9999999, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive, Shield.MyCube.EntityId);
             }
             Shield.WebDamage = true;
             Shield.Absorb += 1;
+
+            Session.Instance.FloaterPool.Return(this);
         }
     }
     public class CollisionDataThreadEvent : IThreadEvent
     {
-        public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseShields Shield;
+        public MyCollisionPhysicsData CollisionData;
+        public DefenseShields Shield;
 
-        public CollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        public void Init(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
+        }
+
+        public void Clean()
+        {
+            CollisionData = new MyCollisionPhysicsData();
+            Shield = null;
         }
 
         public void Execute()
@@ -188,18 +206,25 @@ namespace DefenseShields.Support
                         CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, null, CollisionData.Immediate);
                 }
             }
+            Session.Instance.CollisionPool.Return(this);
         }
     }
 
     public class StationCollisionDataThreadEvent : IThreadEvent
     {
-        public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseShields Shield;
+        public MyCollisionPhysicsData CollisionData;
+        public DefenseShields Shield;
 
-        public StationCollisionDataThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        public void Init(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
+        }
+
+        public void Clean()
+        {
+            CollisionData = new MyCollisionPhysicsData();
+            Shield = null;
         }
 
         public void Execute()
@@ -223,23 +248,26 @@ namespace DefenseShields.Support
             if (CollisionData.Entity1.Physics.LinearVelocity.Length() <= (Session.Instance.MaxEntitySpeed * 0.75))
                 CollisionData.Entity1.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force1, null, null, null, CollisionData.Immediate);
 
-            var transformInv = Shield.DetectMatrixOutsideInv;
-            var normalMat = MatrixD.Transpose(transformInv);
-            var localNormal = Vector3D.Transform(CollisionData.CollisionAvg, transformInv);
-            var surfaceNormal = Vector3D.Normalize(Vector3D.TransformNormal(localNormal, normalMat));
             CollisionData.Entity1.Physics.ApplyImpulse((CollisionData.Mass1 * 0.075) * CollisionData.ImpDirection2, CollisionData.CollisionAvg);
+            Session.Instance.StaticCollisionPool.Return(this);
         }
     }
 
     public class PlayerCollisionThreadEvent : IThreadEvent
     {
-        public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseShields Shield;
+        public MyCollisionPhysicsData CollisionData;
+        public DefenseShields Shield;
 
-        public PlayerCollisionThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        public void Init(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
+        }
+
+        public void Clean()
+        {
+            CollisionData = new MyCollisionPhysicsData();
+            Shield = null;
         }
 
         public void Execute()
@@ -250,26 +278,33 @@ namespace DefenseShields.Support
             if (Session.Instance.MpActive)
             {
                 Shield.AddShieldHit(CollisionData.Entity1.EntityId, 1, Session.Instance.MPKinetic, null, false, CollisionData.CollisionAvg);
-                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive, null, Shield.MyCube.EntityId);
             }
             else
             {
                 Shield.ImpactSize = 1;
                 Shield.WorldImpactPosition = CollisionData.CollisionAvg;
-                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                character?.DoDamage(1f, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive, null, Shield.MyCube.EntityId);
             }
+            Session.Instance.PlayerCollisionPool.Return(this);
         }
     }
 
     public class CharacterEffectThreadEvent : IThreadEvent
     {
-        public readonly IMyCharacter Character;
-        public readonly DefenseShields Shield;
+        public IMyCharacter Character;
+        public DefenseShields Shield;
 
-        public CharacterEffectThreadEvent(IMyCharacter character, DefenseShields shield)
+        public void Init(IMyCharacter character, DefenseShields shield)
         {
             Character = character;
             Shield = shield;
+        }
+
+        public void Clean()
+        {
+            Character = null;
+            Shield = null;
         }
 
         public void Execute()
@@ -279,24 +314,34 @@ namespace DefenseShields.Support
             {
                 Character.Delete();
             }
+            Session.Instance.PlayerEffectPool.Return(this);
         }
     }
 
     public class ManyBlocksThreadEvent : IThreadEvent
     {
-        public readonly DefenseShields Shield;
-        public readonly HashSet<CubeAccel> AccelSet;
-        public readonly float Damage;
-        public readonly Vector3D CollisionAvg;
-        public readonly long AttackerId;
+        public DefenseShields Shield;
+        public HashSet<CubeAccel> AccelSet;
+        public float Damage;
+        public Vector3D CollisionAvg;
+        public long AttackerId;
 
-        public ManyBlocksThreadEvent(HashSet<CubeAccel> accelSet, DefenseShields shield, float damage, Vector3D collisionAvg, long attackerId)
+        public void Init(HashSet<CubeAccel> accelSet, DefenseShields shield, float damage, Vector3D collisionAvg, long attackerId)
         {
             AccelSet = accelSet;
             Shield = shield;
             Damage = damage;
             CollisionAvg = collisionAvg;
             AttackerId = attackerId;
+        }
+
+        public void Clean()
+        {
+            AccelSet = null;
+            Shield = null;
+            Damage = 0;
+            CollisionAvg = Vector3D.Zero;
+            AttackerId = 0;
         }
 
         public void Execute()
@@ -324,14 +369,13 @@ namespace DefenseShields.Support
                 }
 
                 var blockDamage = Shield.ShieldMode == DefenseShields.ShieldType.Station ? accel.Block.MaxIntegrity : accel.Block.MaxIntegrity / 5;
-                accel.Block.DoDamage(blockDamage, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                accel.Block.DoDamage(blockDamage, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive, null, Shield.MyCube.EntityId);
 
                 if (accel.Block.IsDestroyed)
                 {
                     if (Shield.WebEnts.TryGetValue(accel.Grid, out entInfo)) entInfo.RefreshNow = true;
                 }
             }
-
             if (Session.Instance.MpActive)
             {
                 Shield.AddShieldHit(AttackerId, Damage, Session.Instance.MPKinetic, null, true, CollisionAvg);
@@ -345,22 +389,31 @@ namespace DefenseShields.Support
             Shield.Absorb += Damage;
             AccelSet.Clear();
             Session.Instance.SetCubeAccelPool.Return(AccelSet);
+            Session.Instance.ManyBlocksPool.Return(this);
         }
     }
 
     public class VoxelCollisionDmgThreadEvent : IThreadEvent
     {
-        public readonly MyEntity Entity;
-        public readonly DefenseShields Shield;
-        public readonly float Damage;
-        public readonly Vector3D CollisionAvg;
+        public MyEntity Entity;
+        public DefenseShields Shield;
+        public float Damage;
+        public Vector3D CollisionAvg;
 
-        public VoxelCollisionDmgThreadEvent(MyEntity entity, DefenseShields shield, float damage, Vector3D collisionAvg)
+        public void Init(MyEntity entity, DefenseShields shield, float damage, Vector3D collisionAvg)
         {
             Entity = entity;
             Shield = shield;
             Damage = damage;
             CollisionAvg = collisionAvg;
+        }
+
+        public void Clean()
+        {
+            Entity = null;
+            Shield = null;
+            Damage = 0;
+            CollisionAvg = Vector3D.Zero;
         }
 
         public void Execute()
@@ -377,60 +430,55 @@ namespace DefenseShields.Support
             }
             Shield.WebDamage = true;
             Shield.Absorb += Damage;
+            Session.Instance.VoxelCollisionDmgPool.Return(this);
         }
     }
 
     public class VoxelCollisionPhysicsThreadEvent : IThreadEvent
     {
-        public readonly MyCollisionPhysicsData CollisionData;
-        public readonly DefenseShields Shield;
+        public MyCollisionPhysicsData CollisionData;
+        public DefenseShields Shield;
 
-        public VoxelCollisionPhysicsThreadEvent(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
+        public void Init(MyCollisionPhysicsData collisionPhysicsData, DefenseShields shield)
         {
             CollisionData = collisionPhysicsData;
             Shield = shield;
         }
 
+        public void Clean()
+        {
+            CollisionData = new MyCollisionPhysicsData();
+            Shield = null;
+        }
+
         public void Execute()
         {
-                Vector3 velAtPoint;
+            Vector3 velAtPoint;
                 var point = CollisionData.CollisionCorrection2;
                 CollisionData.Entity2.Physics.GetVelocityAtPointLocal(ref point, out velAtPoint);
                 var speed = MathHelper.Clamp(velAtPoint.Length(), 2f, 20f);
                 var forceMulti = (CollisionData.Mass2 * 10) * speed;
                 CollisionData.Entity2.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceMulti * CollisionData.Force2, null, null, speed, CollisionData.Immediate);
-        }
-    }
-
-    public class VoxelDmgThreadEvent : IThreadEvent
-    {
-        public readonly MyVoxelBase VoxelBase;
-        public readonly DefenseShields Shield;
-
-        public VoxelDmgThreadEvent(MyVoxelBase voxelBase, DefenseShields shield)
-        {
-            VoxelBase = voxelBase;
-            Shield = shield;
-        }
-
-        public void Execute()
-        {
-            if (VoxelBase == null || VoxelBase.RootVoxel.MarkedForClose || VoxelBase.RootVoxel.Closed) return;
-            VoxelBase.RootVoxel.RequestVoxelOperationElipsoid(Vector3.One * 1.0f, Shield.DetectMatrixOutside, 0, MyVoxelBase.OperationType.Cut);
+                Session.Instance.VoxelCollisionPhysicsPool.Return(this);
         }
     }
 
     public class MeteorDmgThreadEvent : IThreadEvent
     {
-        public readonly IMyMeteor Meteor;
-        public readonly DefenseShields Shield;
+        public IMyMeteor Meteor;
+        public DefenseShields Shield;
 
-        public MeteorDmgThreadEvent(IMyMeteor meteor, DefenseShields shield)
+        public void Init(IMyMeteor meteor, DefenseShields shield)
         {
             Meteor = meteor;
             Shield = shield;
         }
 
+        public void Clean()
+        {
+            Meteor = null;
+            Shield = null;
+        }
         public void Execute()
         {
             if (Meteor == null || Meteor.MarkedForClose) return;
@@ -438,52 +486,42 @@ namespace DefenseShields.Support
             if (Session.Instance.MpActive)
             {
                 Shield.AddShieldHit(Meteor.EntityId, damage, Session.Instance.MPKinetic, null, false, Meteor.PositionComp.WorldVolume.Center);
-                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive, null, Shield.MyCube.EntityId);
             }
             else
             {
                 Shield.WorldImpactPosition = Meteor.PositionComp.WorldVolume.Center;
                 Shield.ImpactSize = damage;
-                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, true, null, Shield.MyCube.EntityId);
+                Meteor.DoDamage(10000f, Session.Instance.MpIgnoreDamage, Session.Instance.MpActive, null, Shield.MyCube.EntityId);
             }
             Shield.WebDamage = true;
             Shield.Absorb += damage;
+            Session.Instance.MeteorPool.Return(this);
         }
     }
 
     public class ForceDataThreadEvent : IThreadEvent
     {
-        public readonly MyForceData ForceData;
-        public readonly DefenseShields Shield;
+        public MyForceData ForceData;
+        public DefenseShields Shield;
 
-        public ForceDataThreadEvent(MyForceData forceData, DefenseShields shield)
+        public void Init(MyForceData forceData, DefenseShields shield)
         {
             ForceData = forceData;
             Shield = shield;
+        }
+
+        public void Clean()
+        {
+            ForceData = new MyForceData(null, Vector3D.Zero, null, null, null, false);
+            Shield = null;
         }
 
         public void Execute()
         {
             if (ForceData.Entity == null || ForceData.Entity.MarkedForClose) return;
             ForceData.Entity.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, ForceData.Force, null, Vector3D.Zero, ForceData.MaxSpeed, ForceData.Immediate);
-        }
-    }
-
-    public class ImpulseDataThreadEvent : IThreadEvent
-    {
-        public readonly MyImpulseData ImpulseData;
-        public readonly DefenseShields Shield;
-
-        public ImpulseDataThreadEvent(MyImpulseData impulseData, DefenseShields shield)
-        {
-            ImpulseData = impulseData;
-            Shield = shield;
-        }
-
-        public void Execute()
-        {
-            if (ImpulseData.Entity == null || ImpulseData.Entity.MarkedForClose) return;
-            ImpulseData.Entity.Physics.ApplyImpulse(ImpulseData.Direction, ImpulseData.Position);
+            Session.Instance.ForceDataPool.Return(this);
         }
     }
 }

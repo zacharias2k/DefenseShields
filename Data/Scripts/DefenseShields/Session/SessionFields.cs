@@ -63,7 +63,7 @@ namespace DefenseShields
 
         internal readonly ConcurrentDictionary<long, IMyPlayer> Players = new ConcurrentDictionary<long, IMyPlayer>();
 
-        internal readonly ConcurrentQueue<DefenseShields> WebWrapper = new ConcurrentQueue<DefenseShields>();
+        internal readonly List<DefenseShields> WebWrapper = new List<DefenseShields>();
 
         internal readonly ConcurrentQueue<IThreadEvent> ThreadEvents = new ConcurrentQueue<IThreadEvent>();
 
@@ -73,8 +73,11 @@ namespace DefenseShields
         internal readonly ConcurrentDictionary<MyEntity, MyProtectors> GlobalProtect = new ConcurrentDictionary<MyEntity, MyProtectors>();
         internal readonly ConcurrentDictionary<long, ShieldGridComponent> IdToBus = new ConcurrentDictionary<long, ShieldGridComponent>();
         internal readonly ConcurrentDictionary<DefenseShields, bool> FunctionalShields = new ConcurrentDictionary<DefenseShields, bool>();
+        internal readonly Dictionary<MyCubeGrid, uint> CheckForSplits = new Dictionary<MyCubeGrid, uint>();
+        internal readonly CachingDictionary<MyCubeGrid, ParentGrid> GetParentGrid = new CachingDictionary<MyCubeGrid, ParentGrid>();
 
         internal readonly HashSet<DefenseShields> ActiveShields = new HashSet<DefenseShields>();
+        internal readonly HashSet<MyCubeGrid> WatchForSplits = new HashSet<MyCubeGrid>();
 
         internal readonly List<PlanetShields> PlanetShields = new List<PlanetShields>();
         internal readonly List<Emitters> Emitters = new List<Emitters>();
@@ -88,6 +91,20 @@ namespace DefenseShields
 
         internal readonly MyConcurrentPool<HashSet<CubeAccel>> SetCubeAccelPool = new MyConcurrentPool<HashSet<CubeAccel>>(100);
         internal readonly MyConcurrentPool<List<CubeAccel>> ListCubeAccelPool = new MyConcurrentPool<List<CubeAccel>>(100);
+        internal readonly MyConcurrentPool<EntIntersectInfo> EntIntersectInfoPool = new MyConcurrentPool<EntIntersectInfo>(100, info => info.Clean());
+
+        internal readonly MyConcurrentPool<ShieldVsShieldThreadEvent> ShieldEventPool = new MyConcurrentPool<ShieldVsShieldThreadEvent>(25, info => info.Clean());
+        internal readonly MyConcurrentPool<FloaterThreadEvent> FloaterPool = new MyConcurrentPool<FloaterThreadEvent>(100, info => info.Clean());
+        internal readonly MyConcurrentPool<MissileThreadEvent> MissilePool = new MyConcurrentPool<MissileThreadEvent>(100, info => info.Clean());
+        internal readonly MyConcurrentPool<MeteorDmgThreadEvent> MeteorPool = new MyConcurrentPool<MeteorDmgThreadEvent>(25, info => info.Clean());
+        internal readonly MyConcurrentPool<CollisionDataThreadEvent> CollisionPool = new MyConcurrentPool<CollisionDataThreadEvent>(100, info => info.Clean());
+        internal readonly MyConcurrentPool<StationCollisionDataThreadEvent> StaticCollisionPool = new MyConcurrentPool<StationCollisionDataThreadEvent>(100, info => info.Clean());
+        internal readonly MyConcurrentPool<PlayerCollisionThreadEvent> PlayerCollisionPool = new MyConcurrentPool<PlayerCollisionThreadEvent>(10, info => info.Clean());
+        internal readonly MyConcurrentPool<CharacterEffectThreadEvent> PlayerEffectPool = new MyConcurrentPool<CharacterEffectThreadEvent>(10, info => info.Clean());
+        internal readonly MyConcurrentPool<ManyBlocksThreadEvent> ManyBlocksPool = new MyConcurrentPool<ManyBlocksThreadEvent>(100, info => info.Clean());
+        internal readonly MyConcurrentPool<VoxelCollisionDmgThreadEvent> VoxelCollisionDmgPool = new MyConcurrentPool<VoxelCollisionDmgThreadEvent>(25, info => info.Clean());
+        internal readonly MyConcurrentPool<VoxelCollisionPhysicsThreadEvent> VoxelCollisionPhysicsPool = new MyConcurrentPool<VoxelCollisionPhysicsThreadEvent>(25, info => info.Clean());
+        internal readonly MyConcurrentPool<ForceDataThreadEvent> ForceDataPool = new MyConcurrentPool<ForceDataThreadEvent>(100, info => info.Clean());
 
         internal readonly HashSet<string> DsActions = new HashSet<string>()
         {
@@ -204,6 +221,7 @@ namespace DefenseShields
 
         private readonly MonitorWork _workData = new MonitorWork();
         internal readonly ApiBackend Api = new ApiBackend();
+        private readonly List<MyCubeGrid> _tmpWatchGridsToRemove = new List<MyCubeGrid>();
         private readonly List<MyCubeBlock> _warHeadCubeHits = new List<MyCubeBlock>();
         private readonly List<MyCubeGrid> _warHeadGridHits = new List<MyCubeGrid>();
         private readonly List<MyEntity> _pruneWarGrids = new List<MyEntity>();

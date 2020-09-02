@@ -75,7 +75,9 @@
                         if (!_isServer || webent.MarkedForClose) return;
                         if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
                         {
-                            Session.Instance.ThreadEvents.Enqueue(new FloaterThreadEvent(webent, this));
+                            var floater = Session.Instance.FloaterPool.Get();
+                            floater.Init(webent, this);
+                            Session.Instance.ThreadEvents.Enqueue(floater);
                         }
                         return;
                     }
@@ -87,12 +89,22 @@
                         var meteor = webent as IMyMeteor;
                         if (meteor != null)
                         {
-                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv)) Session.Instance.ThreadEvents.Enqueue(new MeteorDmgThreadEvent(meteor, this));
+                            if (CustomCollision.PointInShield(entCenter, DetectMatrixOutsideInv))
+                            {
+                                var meteorEvent = Session.Instance.MeteorPool.Get();
+                                meteorEvent.Init(meteor, this);
+                                Session.Instance.ThreadEvents.Enqueue(meteorEvent);
+                            }
                         }
                         else
                         {
                             var predictedHit = CustomCollision.FutureIntersect(this, webent, DetectionMatrix, DetectMatrixOutsideInv);
-                            if (predictedHit) Session.Instance.ThreadEvents.Enqueue(new MissileThreadEvent(webent, this));
+                            if (predictedHit)
+                            {
+                                var missileEvent = Session.Instance.MissilePool.Get();
+                                missileEvent.Init(webent, this);
+                                Session.Instance.ThreadEvents.Enqueue(missileEvent);
+                            }
                         }
                         return;
                     }
@@ -115,8 +127,14 @@
                     var sLSpeedLen = sLSpeed.LengthSquared();
                     var sASpeedLen = sASpeed.LengthSquared();
                     var sSpeedLen = sLSpeedLen > sASpeedLen ? sLSpeedLen : sASpeedLen;
-                    var forceData = new MyForceData { Entity = entity, Force = -(entity.PositionComp.WorldAABB.Center - sPhysics.CenterOfMassWorld) * -int.MaxValue, MaxSpeed = sSpeedLen + 3 };
-                    if (!bPhysics.IsStatic) Session.Instance.ThreadEvents.Enqueue(new ForceDataThreadEvent(forceData, this));
+                    var direction = Vector3D.Normalize(entity.PositionComp.WorldAABB.Center - DetectionCenter);
+                    var forceData = new MyForceData { Entity = entity, Force = direction * (bPhysics.Mass * 10), MaxSpeed = sSpeedLen + 3 };
+                    if (!bPhysics.IsStatic)
+                    {
+                        var forceEvent = Session.Instance.ForceDataPool.Get();
+                        forceEvent.Init(forceData, this);
+                        Session.Instance.ThreadEvents.Enqueue(forceEvent);
+                    }
                     return true;
                 }
             }
@@ -127,7 +145,6 @@
         {
             var grid = (MyCubeGrid)ent;
             if (grid == null) return;
-
             EntIntersectInfo entInfo;
             WebEnts.TryGetValue(ent, out entInfo);
             if (entInfo == null) return;
@@ -151,6 +168,7 @@
             {
                 EntIntersectInfo entInfo;
                 WebEnts.TryRemove(ent, out entInfo);
+                Session.Instance.EntIntersectInfoPool.Return(entInfo);
             }
             var dsVerts = ds.ShieldComp.PhysicsOutside;
             var dsMatrixInv = ds.DetectMatrixOutsideInv;
@@ -169,7 +187,9 @@
             else if (!_isServer) return;
 
             var damage = ((ds._shieldMaxChargeRate * ConvToHp) * DsState.State.ModulateKinetic) * 0.01666666666f;
-            Session.Instance.ThreadEvents.Enqueue(new ShieldVsShieldThreadEvent(this, damage, collisionAvg, grid.EntityId));
+            var shieldEvent = Session.Instance.ShieldEventPool.Get();
+            shieldEvent.Init(this, damage, collisionAvg, grid.EntityId);
+            Session.Instance.ThreadEvents.Enqueue(shieldEvent);
         }
 
         internal void VoxelIntersect()
@@ -196,7 +216,6 @@
                 }
 
                 var collision = CustomCollision.VoxelEllipsoidCheck(MyGrid, ShieldComp.PhysicsOutsideLow, voxelBase);
-                //var collision = CustomCollision.PointsInsideVoxel(this, ShieldComp.PhysicsOutsideLow, voxelBase);
                 if (collision.HasValue)
                 {
                     ComputeVoxelPhysics(voxelBase, MyGrid, collision.Value);
@@ -208,7 +227,10 @@
                         var sPhysics = Shield.CubeGrid.Physics;
                         var momentum = mass * sPhysics.GetVelocityAtPoint(collision.Value);
                         var damage = (momentum.Length() / 500) * DsState.State.ModulateEnergy;
-                        Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionDmgThreadEvent(voxelBase, this, damage, collision.Value));
+                        
+                        var voxelEvent = Session.Instance.VoxelCollisionDmgPool.Get();
+                        voxelEvent.Init(voxelBase, this, damage, collision.Value);
+                        Session.Instance.ThreadEvents.Enqueue(voxelEvent);
                     }
                 }
                 else VoxelsToIntersect[voxelBase] = 0;
@@ -223,7 +245,12 @@
             var npcname = character.ToString();
             if (npcname.Equals(SpaceWolf))
             {
-                if (_isServer) Session.Instance.ThreadEvents.Enqueue(new CharacterEffectThreadEvent(character, this));
+                if (_isServer)
+                {
+                    var charEvent = Session.Instance.PlayerEffectPool.Get();
+                    charEvent.Init(character, this);
+                    Session.Instance.ThreadEvents.Enqueue(charEvent);
+                }
                 return;
             }
             var player = MyAPIGateway.Multiplayer.Players.GetPlayerControllingEntity(ent);
@@ -238,7 +265,12 @@
                     Force1 = -Vector3.Normalize(ShieldEnt.PositionComp.WorldAABB.Center - (Vector3D)playerIntersect),
                     CollisionAvg = (Vector3D)playerIntersect
                 };
-                if (_isServer) Session.Instance.ThreadEvents.Enqueue(new PlayerCollisionThreadEvent(collisionData, this));
+                if (_isServer)
+                {
+                    var charEvent = Session.Instance.PlayerCollisionPool.Get();
+                    charEvent.Init(collisionData, this);
+                    Session.Instance.ThreadEvents.Enqueue(charEvent);
+                }
             }
         }
 
@@ -320,7 +352,10 @@
 
                     var damage = rawDamage * DsState.State.ModulateEnergy;
 
-                    Session.Instance.ThreadEvents.Enqueue(new ManyBlocksThreadEvent(cubeHitSet, this, damage, collisionAvg, breaching.EntityId));
+                    var blockEvent = Session.Instance.ManyBlocksPool.Get();
+                    blockEvent.Init(cubeHitSet, this, damage, collisionAvg, breaching.EntityId);
+
+                    Session.Instance.ThreadEvents.Enqueue(blockEvent);
                 }
             }
             catch (Exception ex) { Log.Line($"Exception in BlockIntersect: {ex}"); }
@@ -426,7 +461,10 @@
                     Force2 = sforce,
                     CollisionAvg = collisionAvg,
                 };
-                Session.Instance.ThreadEvents.Enqueue(new CollisionDataThreadEvent(collisionData, this));
+                var collisionEvent = Session.Instance.CollisionPool.Get();
+                collisionEvent.Init(collisionData, this);
+
+                Session.Instance.ThreadEvents.Enqueue(collisionEvent);
             }
             else
             {
@@ -452,7 +490,11 @@
                     Force1 = bForce,
                     CollisionAvg = collisionAvg
                 };
-                Session.Instance.ThreadEvents.Enqueue(new StationCollisionDataThreadEvent(collisionData, this));
+
+                var collisionEvent = Session.Instance.StaticCollisionPool.Get();
+                collisionEvent.Init(collisionData, this);
+
+                Session.Instance.ThreadEvents.Enqueue(collisionEvent);
             }
         }
 
@@ -507,7 +549,9 @@
                 CollisionAvg = collisionAvg,
                 Immediate = false
             };
-            Session.Instance.ThreadEvents.Enqueue(new VoxelCollisionPhysicsThreadEvent(collisionData, this));
+            var collisionEvent = Session.Instance.VoxelCollisionPhysicsPool.Get();
+            collisionEvent.Init(collisionData, this);
+            Session.Instance.ThreadEvents.Enqueue(collisionEvent);
         }
         #endregion
     }

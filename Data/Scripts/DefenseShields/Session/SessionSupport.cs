@@ -71,7 +71,47 @@ namespace DefenseShields
             return false;
         }
 
+        private void SplitMonitor()
+        {
+            foreach (var pair in CheckForSplits)
+            {
+                if (WatchForSplits.Add(pair.Key))
+                    pair.Key.OnGridSplit += GridSplitWatch;
+                else if (Tick - pair.Value > 120)
+                    _tmpWatchGridsToRemove.Add(pair.Key);
+            }
+
+            for (int i = 0; i < _tmpWatchGridsToRemove.Count; i++)
+            {
+                var grid = _tmpWatchGridsToRemove[i];
+                grid.OnGridSplit -= GridSplitWatch;
+                WatchForSplits.Remove(grid);
+                CheckForSplits.Remove(grid);
+            }
+            _tmpWatchGridsToRemove.Clear();
+
+            foreach (var parent in GetParentGrid)
+            {
+                if (Tick - parent.Value.Age > 120)
+                    GetParentGrid.Remove(parent.Key);
+            }
+            GetParentGrid.ApplyRemovals();
+        }
+
         #region Events
+
+        internal struct ParentGrid
+        {
+            internal MyCubeGrid Parent;
+            internal uint Age;
+        }
+
+        private void GridSplitWatch(MyCubeGrid parent, MyCubeGrid child)
+        {
+            GetParentGrid[child] = new ParentGrid {Parent = parent, Age = Tick};
+            GetParentGrid.ApplyAdditionsAndModifications();
+        }
+
         private void OnEntityRemove(MyEntity myEntity)
         {
             var warhead = myEntity as IMyWarhead;

@@ -23,7 +23,6 @@ namespace DefenseShields
         internal readonly MyDefinitionId GId = MyResourceDistributorComponent.ElectricityId;
 
         internal readonly object SubLock = new object();
-        internal readonly object SubUpdateLock = new object();
 
         internal readonly int[] ExpChargeReductions = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
         internal readonly float[] ReserveScaler = { -1f, 0.001f, 1, 1000, 1000000 };
@@ -40,14 +39,11 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
         internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
-        internal readonly CachingDictionary<MyCubeBlock, uint> DirtyCubeBlocks = new CachingDictionary<MyCubeBlock, uint>();
-
-        internal readonly ConcurrentDictionary<MyCubeGrid, BlockSets> BlockSets = new ConcurrentDictionary<MyCubeGrid, BlockSets>();
+        
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
 
-        internal readonly ConcurrentQueue<SubGridComputedInfo> AddSubGridInfo = new ConcurrentQueue<SubGridComputedInfo>();
         internal readonly object MatrixLock = new object();
 
         internal const int ConvToHp = 100;
@@ -56,7 +52,6 @@ namespace DefenseShields
 
         internal volatile int LogicSlot;
         internal volatile int MonitorSlot;
-        internal volatile int LostPings;
         internal volatile bool MoverByShield;
         internal volatile bool PlayerByShield;
         internal volatile bool NewEntByShield;
@@ -64,6 +59,8 @@ namespace DefenseShields
         internal volatile bool WasPaused;
         internal volatile uint LastWokenTick;
         internal volatile bool ReInforcedShield;
+
+        internal int LostPings;
 
         internal BoundingBoxD WebBox = new BoundingBoxD();
         internal MatrixD OldShieldMatrix;
@@ -121,10 +118,8 @@ namespace DefenseShields
         private uint _shieldEntRendId;
         private uint _subTick;
         private uint _funcTick;
-        private uint _fatTick;
         private uint _shapeTick;
         private uint _capacitorTick;
-        private uint _messageTick;
         private uint _heatVentingTick = uint.MaxValue;
         private uint _lastSendDamageTick = uint.MaxValue;
 
@@ -217,8 +212,6 @@ namespace DefenseShields
         private bool _viewInShield;
         private bool _powerFail;
         private bool _halfExtentsChanged;
-        private bool _checkForDistributor;
-        private bool _updatePowerSources;
         private bool _readyToSync;
         private bool _firstSync;
         private bool _adjustShape;

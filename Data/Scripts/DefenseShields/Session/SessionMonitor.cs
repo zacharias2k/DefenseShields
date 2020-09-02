@@ -1,4 +1,5 @@
-﻿using Sandbox;
+﻿using System.Threading;
+using Sandbox;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.ModAPI.Interfaces;
 using Sandbox.ModAPI.Interfaces.Terminal;
@@ -101,7 +102,9 @@ namespace DefenseShields
                         return;
                     }
                     if (Enforced.Debug >= 2 && s.LostPings > 0) Log.Line($"Lost Logic Pings:{s.LostPings}");
-                    if (shieldActive) s.LostPings++;
+                    
+                    if (shieldActive)
+                        s.LostPings++;
 
                     if (s.Asleep && EmpStore.Count != 0 && Vector3D.DistanceSquared(s.DetectionCenter, EmpWork.EpiCenter) <= SyncDistSqr)
                     {
@@ -257,8 +260,6 @@ namespace DefenseShields
 
                 if (!newMode)
                 {
-                    // var testMat = s.DetectMatrixOutside;
-                    // var shape1 = new Sphere(Vector3D.Zero, 1.0).Transformed(testMat);
                     var foundNewEnt = false;
                     var disableVoxels = Enforced.DisableVoxelSupport == 1 || s.ShieldComp.Modulator == null || s.ShieldComp.Modulator.ModSet.Settings.ModulateVoxels;
                     MyGamePruningStructure.GetTopmostEntitiesInBox(ref s.WebBox, monitorList);
@@ -274,13 +275,6 @@ namespace DefenseShields
 
                             if (ent is IMyFloatingObject || ent is IMyEngineerToolBase || !s.WebSphere.Intersects(ent.PositionComp.WorldVolume)) continue;
 
-                            // var halfExtents = ent.PositionComp.LocalAABB.HalfExtents;
-                            // if (halfExtents.X < 1) halfExtents.X = 10;
-                            // if (halfExtents.Y < 1) halfExtents.Y = 10;
-                            // if (halfExtents.Z < 1) halfExtents.Z = 10;
-                            // var shape2 = new Box(-halfExtents, halfExtents).Transformed(ent.WorldMatrix);
-                            // var test = Gjk.Intersects(ref shape1, ref shape2);
-                            // Log.Line($"{ent.DebugName} - {test}");
                             if (CustomCollision.NewObbPointsInShield(ent, s.DetectMatrixOutsideInv) > 0)
                             {
                                 if (!_globalEntTmp.ContainsKey(ent))
@@ -304,7 +298,7 @@ namespace DefenseShields
                             var character = player.Character;
                             if (character == null) continue;
 
-                            if (Vector3D.DistanceSquared(character.PositionComp.WorldMatrix.Translation, s.DetectionCenter) < SyncDistSqr)
+                            if (Vector3D.DistanceSquared(character.PositionComp.WorldMatrixRef.Translation, s.DetectionCenter) < SyncDistSqr)
                             {
                                 foundPlayer = true;
                                 break;
@@ -596,7 +590,9 @@ namespace DefenseShields
                 if (WebWrapperOn)
                 {
                     Dispatched = true;
-                    MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
+                    //MyAPIGateway.Parallel.Start(WebDispatch, WebDispatchDone);
+                    WebDispatch();
+                    WebDispatchDone();
                     WebWrapperOn = false;
                 }
             }
@@ -604,13 +600,18 @@ namespace DefenseShields
 
         private void WebDispatch()
         {
-            DefenseShields shield;
-            while (WebWrapper.TryDequeue(out shield))
+            MyAPIGateway.Parallel.For(0, WebWrapper.Count, i =>
             {
-                if (shield == null || shield.MarkedForClose) continue;
+                var shield = WebWrapper[i];
+                if (shield == null || shield.MarkedForClose) return;
                 if (!shield.VoxelsToIntersect.IsEmpty) MyAPIGateway.Parallel.StartBackground(shield.VoxelIntersect);
-                if (!shield.WebEnts.IsEmpty) MyAPIGateway.Parallel.ForEach(shield.WebEnts, shield.EntIntersectSelector);
-            }
+                
+                if (!shield.WebEnts.IsEmpty) {
+                    foreach (var pair in shield.WebEnts)
+                        shield.EntIntersectSelector(pair);
+                }
+            });
+            WebWrapper.Clear();
         }
 
         private void WebDispatchDone()

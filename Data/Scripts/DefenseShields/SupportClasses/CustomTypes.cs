@@ -1,4 +1,6 @@
-﻿namespace DefenseShields.Support
+﻿using VRage.Audio;
+
+namespace DefenseShields.Support
 {
     using System;
     using System.Collections.Generic;
@@ -291,16 +293,16 @@
         public BoundingBox Box;
         public uint LastTick;
         public uint RefreshTick;
-        public readonly uint FirstTick;
+        public uint FirstTick;
         public DefenseShields.Ent Relation;
         public List<CubeAccel> CacheBlockList = new List<CubeAccel>();
         public bool RefreshNow;
         public bool EnemySafeInside;
         public volatile bool Touched;
         public volatile uint LastCollision;
-        public volatile int ConsecutiveCollisions;
+        public int ConsecutiveCollisions;
 
-        public EntIntersectInfo(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
+        public void Init(bool touched, BoundingBox box, uint firstTick, uint lastTick, uint refreshTick, DefenseShields.Ent relation)
         {
             Touched = touched;
             Box = box;
@@ -310,6 +312,22 @@
             Relation = relation;
             RefreshNow = true;
             if (relation == DefenseShields.Ent.EnemyInside) EnemySafeInside = true;
+        }
+
+        public EntIntersectInfo()
+        {
+        }
+
+        public void Clean()
+        {
+            EnemySafeInside = false;
+            RefreshNow = false;
+            Touched = false;
+            CacheBlockList.Clear();
+            RefreshTick = 0;
+            LastCollision = 0;
+            ConsecutiveCollisions = 0;
+            LastTick = 0;
         }
     }
 

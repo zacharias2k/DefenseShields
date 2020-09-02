@@ -62,7 +62,6 @@
                     SyncBufferedDistSqr = SyncDistSqr + 250000;
                     if (Enforced.Debug >= 2) Log.Line($"SyncDistSqr:{SyncDistSqr} - SyncBufferedDistSqr:{SyncBufferedDistSqr} - DistNorm:{SyncDist}");
                 }
-                //MyAPIGateway.Parallel.StartBackground(WebMonitor);
                 WebMonitor();
 
                 if (!IsServer) RequestEnforcement(MyAPIGateway.Multiplayer.MyId);
@@ -112,15 +111,15 @@
 
         public override void UpdateAfterSimulation()
         {
+            
+            SplitMonitor();
             lock (ActiveShields)
             {
                 foreach (var s in ActiveShields)
                     if (s.GridIsMobile && !s.Asleep) s.MobileUpdate();
             }
 
-            //MonitorTask = MyAPIGateway.Parallel.StartBackground(WebMonitor);
             WebMonitor();
-
         }
         #endregion
 
