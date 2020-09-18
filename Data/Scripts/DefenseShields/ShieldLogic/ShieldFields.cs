@@ -38,11 +38,13 @@ namespace DefenseShields
         internal readonly HashSet<MyEntity> Missiles = new HashSet<MyEntity>();
         internal readonly HashSet<MyEntity> FriendlyMissileCache = new HashSet<MyEntity>();
 
-        internal readonly Dictionary<MyEntity, ProtectCache> ProtectedEntCache = new Dictionary<MyEntity, ProtectCache>();
+        internal readonly ConcurrentDictionary<MyEntity, ProtectCache> ProtectedEntCache = new ConcurrentDictionary<MyEntity, ProtectCache>();
         
         internal readonly ConcurrentDictionary<MyEntity, EntIntersectInfo> WebEnts = new ConcurrentDictionary<MyEntity, EntIntersectInfo>();
         internal readonly ConcurrentDictionary<MyEntity, MoverInfo> EntsByMe = new ConcurrentDictionary<MyEntity, MoverInfo>();
         internal readonly ConcurrentDictionary<MyVoxelBase, int> VoxelsToIntersect = new ConcurrentDictionary<MyVoxelBase, int>();
+        internal readonly Vector3D[] FitBlockPoints = new Vector3D[8];
+        internal readonly List<IMySlimBlock> FitBlocks = new List<IMySlimBlock>();
 
         internal readonly object MatrixLock = new object();
 

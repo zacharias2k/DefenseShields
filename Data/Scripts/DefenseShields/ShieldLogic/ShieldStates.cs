@@ -166,6 +166,7 @@
         private void DefaultShieldState(bool clear, bool keepCharge, bool resetShape = true)
         {
             NotFailed = false;
+            var clearHeat = !DsState.State.Lowered || !IsWorking;
             if (clear)
             {
                 _power = 0.001f;
@@ -182,16 +183,21 @@
                     _shapeEvent = true;
                 }
             }
+
             if (_isServer)
             {
                 DsState.State.IncreaseO2ByFPercent = 0f;
-                DsState.State.Heat = 0;
+                if (clearHeat)
+                    DsState.State.Heat = 0;
                 DsState.State.Online = false;
             }
 
-            _currentHeatStep = 0;
-            _accumulatedHeat = 0;
-            _heatCycle = -1;
+            if (clearHeat)
+            {
+                _currentHeatStep = 0;
+                _accumulatedHeat = 0;
+                _heatCycle = -1;
+            }
 
             Absorb = 0f;
             EnergyHit = HitType.Kinetic;

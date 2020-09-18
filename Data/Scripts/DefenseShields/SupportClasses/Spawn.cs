@@ -78,6 +78,7 @@ namespace DefenseShields.Support
                 ent.Init(new StringBuilder(displayName), model, myParent, null, null);
                 ent.Name = $"{parent.EntityId}";
                 ent.DefinitionId = new MyDefinitionId(MyObjectBuilderType.Invalid, MyStringHash.GetOrCompute("DefenseShield"));
+                ent.Hierarchy.ChildId = parent.EntityId;
                 MyEntities.Add(ent);
                 return ent;
             }

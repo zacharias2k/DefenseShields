@@ -134,8 +134,9 @@ namespace DefenseShields
         private void GetShapeAdjust()
         {
             if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
-            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit(Shield, DsState.State.GridHalfExtents);
-            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit(Shield, DsState.State.GridHalfExtents);
+            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit((MyCubeBlock)Shield, DsState.State.GridHalfExtents, FitBlocks, FitBlockPoints);
+            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit((MyCubeBlock)Shield, DsState.State.GridHalfExtents, FitBlocks, FitBlockPoints);
+            FitBlocks.Clear();
         }
 
         private void CheckExtents()

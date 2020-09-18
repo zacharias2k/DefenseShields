@@ -265,8 +265,11 @@ namespace DefenseShields
                     _powerFail = false;
                 }
             }
-            if (DsState.State.Heat != 0) UpdateHeatRate();
-            else _expChargeReduction = 0;
+
+            if (!DsState.State.Lowered) {
+                if (DsState.State.Heat != 0) UpdateHeatRate();
+                else _expChargeReduction = 0;
+            }
 
             if (_count == 29 && DsState.State.Charge < ShieldMaxCharge) DsState.State.Charge += ShieldChargeRate;
             else if (DsState.State.Charge.Equals(ShieldMaxCharge))

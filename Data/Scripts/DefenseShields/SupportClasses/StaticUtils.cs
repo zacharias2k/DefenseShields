@@ -496,15 +496,18 @@ namespace DefenseShields.Support
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
         }
 
-        public static double CreateNormalFit(IMyCubeBlock shield, Vector3D gridHalfExtents)
+        public static double CreateNormalFit(MyCubeBlock shield, Vector3D gridHalfExtents, List<IMySlimBlock> fitblocks, Vector3D[] fitPoints)
         {
-            var blockPoints = new Vector3D[8];
-            var blocks = new List<IMySlimBlock>();
 
             var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
-            foreach (var grid in subGrids) grid.GetBlocks(blocks);
+            
+            foreach (var grid in subGrids) {
+                if (grid.MarkedForClose)
+                    continue;
+                fitblocks.AddRange(((MyCubeGrid)grid).GetBlocks());
+            }
 
-            var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
+            var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.PositionComp.WorldMatrixRef);
 
             var end = 10;
             var wasOutside = false;
@@ -518,17 +521,22 @@ namespace DefenseShields.Support
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
                 mobileMatrix.Translation = shield.CubeGrid.PositionComp.LocalAABB.Center;
-                var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.WorldMatrix);
+                var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.PositionComp.WorldMatrixRef);
 
                 var pointOutside = false;
-                foreach (var block in blocks)
+                for (int j = 0; j < fitblocks.Count; j++)
                 {
+                    var block = fitblocks[j];
+                    var fat = block.FatBlock as MyCubeBlock;
+                    if (fat != null && fat.MarkedForClose || block.IsDestroyed)
+                        continue;
+
                     BoundingBoxD blockBox;
                     Vector3D center;
-                    if (block.FatBlock != null)
+                    if (fat != null)
                     {
-                        blockBox = block.FatBlock.LocalAABB;
-                        center = block.FatBlock.WorldAABB.Center;
+                        blockBox = fat.PositionComp.LocalAABB;
+                        center = fat.PositionComp.WorldAABB.Center;
                     }
                     else
                     {
@@ -540,10 +548,10 @@ namespace DefenseShields.Support
 
                     var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 
-                    bOriBBoxD.GetCorners(blockPoints, 0);
-                    foreach (var point in blockPoints)
+                    bOriBBoxD.GetCorners(fitPoints, 0);
+                    foreach (var point in fitPoints)
                     {
-                        if (!CustomCollision.PointInShield(point, matrixInv))
+                        if (!CustomCollision.PointInShield(point, matrixInv) && ((MyCubeGrid)block.CubeGrid).IsSameConstructAs(shield.CubeGrid))
                         {
                             pointOutside = true;
                             break;
@@ -551,20 +559,14 @@ namespace DefenseShields.Support
                     }
                 }
 
-                //Log.Line($"i:{i} - end:{end} - sqrtStart:{fitSeq.SqrtStart} - sqrtEnd:{fitSeq.SqrtEnd} - multi:{fitSeq.SeqMulti}");
                 if (pointOutside)
                 {
                     wasOutside = true;
-                    //Log.Line($"Point is Outside");
                     if (i == 0)
-                    {
-                        //Log.Line("i == 0 and points outside returning maxSize");
                         return ellipsoidAdjust;
-                    }
 
                     if (i == 2)
                     {
-                        //Log.Line($"Mid outside, jumping to 11");
                         i = 10;
                         end = 19;
                     }
@@ -572,38 +574,30 @@ namespace DefenseShields.Support
 
                 if (!pointOutside)
                 {
-                    //Log.Line($"Point is Inside");
                     if (i == 1)
-                    {
-                        //Log.Line($"i == 1, returning minValue");
                         return ellipsoidAdjust;
-                    }
                     if (wasOutside)
-                    {
-                        //Log.Line($"wasOutside and now in, returning value");
                         return ellipsoidAdjust;
-                    }
                 }
 
                 if (i == end)
-                {
-                    //Log.Line($"reached end, returning current value");
                     return ellipsoidAdjust;
-                }
             }
-            //Log.Line($"fitNoMatch");
             return Math.Sqrt(5);
         }
 
-        public static double CreateExtendedFit(IMyCubeBlock shield, Vector3D gridHalfExtents)
+        public static double CreateExtendedFit(MyCubeBlock shield, Vector3D gridHalfExtents, List<IMySlimBlock> fitblocks, Vector3D[] fitPoints)
         {
-            var blockPoints = new Vector3D[8];
-            var blocks = new List<IMySlimBlock>();
-
             var subGrids = MyAPIGateway.GridGroups.GetGroup(shield.CubeGrid, GridLinkTypeEnum.Mechanical);
-            foreach (var grid in subGrids) grid.GetBlocks(blocks);
+            
+            foreach (var grid in subGrids) {
+                if (grid.MarkedForClose)
+                    continue;
+                fitblocks.AddRange(((MyCubeGrid)grid).GetBlocks());
+            }
 
-            var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.WorldMatrix);
+            var bQuaternion = Quaternion.CreateFromRotationMatrix(shield.CubeGrid.PositionComp.WorldMatrixRef);
+
             var sqrt3 = Math.Sqrt(3);
             var sqrt5 = Math.Sqrt(5);
             var last = 0;
@@ -615,17 +609,23 @@ namespace DefenseShields.Support
                 var shieldSize = gridHalfExtents * ellipsoidAdjust;
                 var mobileMatrix = MatrixD.CreateScale(shieldSize);
                 mobileMatrix.Translation = shield.CubeGrid.PositionComp.LocalVolume.Center;
-                var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.WorldMatrix);
+                var matrixInv = MatrixD.Invert(mobileMatrix * shield.CubeGrid.PositionComp.WorldMatrixRef);
 
                 var c = 0;
-                foreach (var block in blocks)
+                for (int j = 0; j < fitblocks.Count; j++)
                 {
+                    var block = fitblocks[j];
+                    var fat = block.FatBlock as MyCubeBlock;
+                    
+                    if (fat != null && fat.MarkedForClose || block.IsDestroyed)
+                        continue;
+
                     BoundingBoxD blockBox;
                     Vector3D center;
-                    if (block.FatBlock != null)
+                    if (fat != null)
                     {
-                        blockBox = block.FatBlock.LocalAABB;
-                        center = block.FatBlock.WorldAABB.Center;
+                        blockBox = fat.PositionComp.LocalAABB;
+                        center = fat.PositionComp.WorldAABB.Center;
                     }
                     else
                     {
@@ -637,9 +637,9 @@ namespace DefenseShields.Support
 
                     var bOriBBoxD = new MyOrientedBoundingBoxD(center, blockBox.HalfExtents, bQuaternion);
 
-                    bOriBBoxD.GetCorners(blockPoints, 0);
-                    foreach (var point in blockPoints)
-                        if (!CustomCollision.PointInShield(point, matrixInv)) c++;
+                    bOriBBoxD.GetCorners(fitPoints, 0);
+                    foreach (var point in fitPoints)
+                        if (!CustomCollision.PointInShield(point, matrixInv) && ((MyCubeGrid)block.CubeGrid).IsSameConstructAs(shield.CubeGrid)) c++;
                 }
 
                 if (c == last) repeat++;

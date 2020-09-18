@@ -81,11 +81,13 @@ namespace DefenseShields
         {
             _subUpdate = false;
 
-            var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
             lock (SubLock)
             {
-                if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !force) return;
-                if (Session.Enforced.Debug >= 3 && ShieldComp.LinkedGrids.Count != 0) Log.Line($"SubGroupCnt: subCountChanged:{ShieldComp.LinkedGrids.Count != gotGroups.Count} - old:{ShieldComp.LinkedGrids.Count} - new:{gotGroups.Count} - ShieldId [{Shield.EntityId}]");
+                var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
+
+                if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !SubGridChangeDetect(gotGroups)) 
+                    return;
+
                 foreach (var s in ShieldComp.SubGrids) Session.Instance.IdToBus.Remove(s.EntityId);
                 ShieldComp.SubGrids.Clear();
                 ShieldComp.LinkedGrids.Clear();
@@ -105,6 +107,16 @@ namespace DefenseShields
             _blockChanged = true;
             _functionalChanged = true;
             _updateGridDistributor = true;
+        }
+
+        private bool SubGridChangeDetect(List<IMyCubeGrid> linkedGrids)
+        {
+            for (int i = 0; i < linkedGrids.Count; i++) {
+                var link = (MyCubeGrid)linkedGrids[i];
+                if (!ShieldComp.LinkedGrids.ContainsKey(link))
+                    return false;
+            }
+            return true;
         }
 
         private void BlockMonitor()

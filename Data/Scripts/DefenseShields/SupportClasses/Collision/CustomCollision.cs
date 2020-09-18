@@ -1,4 +1,5 @@
 ﻿using VRage.Game.ObjectBuilders.Definitions.SessionComponents;
+using VRage.Utils;
 
 namespace DefenseShields.Support
 {
@@ -73,32 +74,55 @@ namespace DefenseShields.Support
 
         public static float? IntersectEllipsoid(MatrixD ellipsoidMatrixInv, MatrixD ellipsoidMatrix, RayD ray)
         {
-            var normSphere = new BoundingSphereD(Vector3.Zero, 1f);
-            var kRay = new RayD(Vector3D.Zero, Vector3D.Forward);
+            var normSphere = new BoundingSphereD(Vector3D.Zero, 1f);
 
-            Vector3D krayPos;
-            Vector3D.Transform(ref ray.Position, ref ellipsoidMatrixInv, out krayPos);
+            Vector3D tPos;
+            Vector3D.Transform(ref ray.Position, ref ellipsoidMatrixInv, out tPos);
+
+            Vector3D tDir;
+            Vector3D.TransformNormal(ref ray.Direction, ref ellipsoidMatrixInv, out tDir);
+
+            Vector3D tNormDir;
+            Vector3D.Normalize(ref tDir, out tNormDir);
+
+            var localRay = new RayD(tPos, tNormDir);
+
+            var normalizedDistance = normSphere.Intersects(localRay);
+
+            if (normalizedDistance == null || normalizedDistance.Value <= 0) 
+                return (float?) normalizedDistance;
             
-            Vector3D nDir;
-            Vector3D.TransformNormal(ref ray.Direction, ref ellipsoidMatrixInv, out nDir);
+            var localHitPos = tPos + (tNormDir * normalizedDistance.Value);
 
-            Vector3D krayDir;
-            Vector3D.Normalize(ref nDir, out krayDir);
-            
-            kRay.Direction = krayDir;
-            kRay.Position = krayPos;
-            var nullDist = normSphere.Intersects(kRay);
-            if (!nullDist.HasValue) return null;
-
-            var hitPos = krayPos + (krayDir * -nullDist.Value);
             Vector3D worldHitPos;
-            Vector3D.Transform(ref hitPos, ref ellipsoidMatrix, out worldHitPos);
+            Vector3D.Transform(ref localHitPos, ref ellipsoidMatrix, out worldHitPos);
 
             double distance;
             Vector3D.Distance(ref worldHitPos, ref ray.Position, out distance);
-            return (float?)(double.IsNaN(distance) ? (double?)null : distance);
+            var isNaN = double.IsNaN(distance);
+
+            return (float?)(isNaN ? (double?)null : distance);
         }
 
+        public static bool IntersectEllipsoidObb(MatrixD ellipsoidMatrixInv, MyOrientedBoundingBoxD obb)
+        {
+            var normSphere = new BoundingSphereD(Vector3D.Zero, 1f);
+
+            obb.Transform(ref ellipsoidMatrixInv);
+            var intersected = obb.Intersects(ref normSphere);
+
+            return intersected;
+        }
+
+        public static bool IntersectEllipsoidBox(MatrixD ellipsoidMatrixInv, BoundingBoxD box)
+        {
+            var normSphere = new BoundingSphereD(Vector3D.Zero, 1f);
+
+            box.TransformSlow(ref ellipsoidMatrixInv);
+            var intersected = box.Intersects(ref normSphere);
+
+            return intersected;
+        }
 
         public static Vector3D ClosestObbPointToPos(MyOrientedBoundingBoxD obb, Vector3D point)
         {
