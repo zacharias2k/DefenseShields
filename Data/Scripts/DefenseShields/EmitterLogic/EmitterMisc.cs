@@ -170,6 +170,7 @@ namespace DefenseShields
 
         private void Timing()
         {
+            ++_age;
             if (_count++ == 59)
             {
                 _count = 0;

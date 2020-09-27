@@ -278,14 +278,14 @@ namespace DefenseShields.Support
             var sPosComp = shieldEnt.PositionComp;
             var radius = sPosComp.WorldVolume.Radius;
             var center = sPosComp.WorldAABB.Center;
-            var gMatrix = grid.WorldMatrix;
+            var gMatrix = grid.PositionComp.WorldMatrixRef;
             for (int i = 0; i < pointLimit; i++)
             {
                 var v = physicsArray[i];
                 if (rotate) Vector3D.Rotate(ref v, ref gMatrix, out v);
                 v = center + (radius * v);
                 scaledCloudList.Add(v);
-                if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrix, 0.5);
+                if (debug) DsDebugDraw.DrawX(v, sPosComp.LocalMatrixRef, 0.5);
             }
         }
 
@@ -494,6 +494,12 @@ namespace DefenseShields.Support
                 if (Session.Enforced.Debug == 3) Log.Line("Definitions: Session");
             }
             catch (Exception ex) { Log.Line($"Exception in GetAmmoDefinitions: {ex}"); }
+        }
+
+        public static double GetFit(int size)
+        {
+            var fitSeq = Session.Instance.Fits[size];
+            return MathHelper.Lerp(fitSeq.SqrtStart, fitSeq.SqrtEnd, fitSeq.SeqMulti);
         }
 
         public static double CreateNormalFit(MyCubeBlock shield, Vector3D gridHalfExtents, List<IMySlimBlock> fitblocks, Vector3D[] fitPoints)

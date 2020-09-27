@@ -75,6 +75,17 @@ namespace DefenseShields
             }
         }
 
+        public BoundingBoxD GetMechnicalGroupAabb()
+        {
+            BoundingBoxD worldAabb = new BoundingBoxD();
+            lock (SubLock) {
+                foreach (var sub in ShieldComp.SubGrids)
+                    worldAabb.Include(sub.PositionComp.WorldAABB);
+            }
+
+            return worldAabb;
+        }
+
         public void ResetDamageEffects()
         {
             if (DsState.State.Online && !DsState.State.Lowered)

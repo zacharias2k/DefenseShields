@@ -31,6 +31,7 @@ namespace DefenseShields
         private DSUtils _dsUtil = new DSUtils();
 
         private uint _tick;
+        private int _age;
         private int _count = -1;
         private int _lCount;
         private int _bCount;

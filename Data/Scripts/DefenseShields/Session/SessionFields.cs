@@ -309,7 +309,7 @@ namespace DefenseShields
         internal IMyTerminalControlSlider OffsetHeightSlider { get; set; }
         internal IMyTerminalControlSlider OffsetDepthSlider { get; set; }
         internal IMyTerminalControlSlider ChargeSlider { get; set; }
-        internal IMyTerminalControlCheckbox ExtendFit { get; set; }
+        internal IMyTerminalControlSlider Fit { get; set; }
         internal IMyTerminalControlCheckbox SphereFit { get; set; }
         internal IMyTerminalControlCheckbox FortifyShield { get; set; }
         internal IMyTerminalControlCheckbox BatteryBoostCheckBox { get; set; }
@@ -368,6 +368,30 @@ namespace DefenseShields
             new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.7f),
             new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.8f),
             new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.9f)
+        };
+
+        internal GetFitSeq[] Fits = new GetFitSeq[]
+        {
+            new GetFitSeq(Math.Sqrt(1), Math.Sqrt(2), 1f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.1f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.2f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.3f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.4f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.5f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.6f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.7f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.8f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 0.9f),
+            new GetFitSeq(Math.Sqrt(2), Math.Sqrt(3), 1f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.1f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.2f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.3f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.4f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.5f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.6f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.7f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.8f),
+            new GetFitSeq(Math.Sqrt(4), Math.Sqrt(5), 0.9f),
         };
 
         internal readonly string[] Thya = { "THYA-ShieldC", "THYA-ShieldH", "THYA-ShieldV" };

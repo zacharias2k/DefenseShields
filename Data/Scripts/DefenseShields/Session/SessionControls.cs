@@ -26,7 +26,7 @@
                 {
                     var existingAction = a.Enabled;
 
-                    a.Enabled = (b) => (existingAction == null ? true : existingAction.Invoke(b)) && actionEnabledAppend(a, b);
+                    a.Enabled = (b) => (existingAction?.Invoke(b) ?? true) && actionEnabledAppend(a, b);
                 }
             }
         }
@@ -50,7 +50,9 @@
                     TerminalHelpers.Separator(comp.Shield, "DS-C_sep2");
                 }
 
-                ExtendFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ExtendFit", "Extend Shield", "Extend Shield", DsUi.GetExtend, DsUi.SetExtend);
+                Fit = TerminalHelpers.AddSlider(comp?.Shield, "DS-CFit", "Shield Fit", "Shield Fit", DsUi.GetFit, DsUi.SetFit);
+                Fit.SetLimits(0, 19);
+
                 SphereFit = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_SphereFit", "Sphere Shield", "Sphere Shield", DsUi.GetSphereFit, DsUi.SetSphereFit);
                 FortifyShield = TerminalHelpers.AddCheckbox(comp?.Shield, "DS-C_ShieldFortify", "Fortify Shield ", "Fortify Shield ", DsUi.GetFortify, DsUi.SetFortify);
                 TerminalHelpers.Separator(comp?.Shield, "DS-C_sep3");
@@ -92,7 +94,7 @@
 
                 CreateActionChargeRate<IMyUpgradeModule>(ChargeSlider);
 
-                CreateAction<IMyUpgradeModule>(ExtendFit);
+                //CreateAction<IMyUpgradeModule>(Fit);
                 CreateAction<IMyUpgradeModule>(SphereFit);
                 CreateAction<IMyUpgradeModule>(FortifyShield);
 

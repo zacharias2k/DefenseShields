@@ -1,4 +1,6 @@
-﻿namespace DefenseShields
+﻿using System;
+
+namespace DefenseShields
 {
     using System.Collections.Generic;
     using Support;
@@ -50,7 +52,7 @@
             Session.Instance.OffsetHeightSlider.Visible = ShowSizeSlider;
             Session.Instance.OffsetDepthSlider.Visible = ShowSizeSlider;
 
-            Session.Instance.ExtendFit.Visible = ShowReSizeCheckBoxs;
+            Session.Instance.Fit.Visible = ShowReSizeCheckBoxs;
             Session.Instance.SphereFit.Visible = ShowReSizeCheckBoxs;
             Session.Instance.FortifyShield.Visible = ShowReSizeCheckBoxs;
         }
@@ -77,17 +79,17 @@
             comp.ClientUiUpdate = true;
         }
 
-        internal static bool GetExtend(IMyTerminalBlock block)
+        internal static float GetFit(IMyTerminalBlock block)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
-            return comp?.DsSet.Settings.ExtendFit ?? false;
+            return comp?.DsSet.Settings.Fit ?? 0f;
         }
 
-        internal static void SetExtend(IMyTerminalBlock block, bool newValue)
+        internal static void SetFit(IMyTerminalBlock block, float newValue)
         {
             var comp = block?.GameLogic?.GetAs<DefenseShields>();
             if (comp == null) return;
-            comp.DsSet.Settings.ExtendFit = newValue;
+            comp.DsSet.Settings.Fit = (int)Math.Round(newValue);
             comp.FitChanged = true;
             comp.SettingsUpdated = true;
             comp.ClientUiUpdate = true;

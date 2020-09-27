@@ -46,7 +46,7 @@ namespace DefenseShields
 
                 if (EnergyHit != HitType.Other) HitParticleStart(impactPos, intersected);
 
-                var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrix;
+                var cubeBlockLocalMatrix = MyGrid.PositionComp.LocalMatrixRef;
                 var referenceWorldPosition = cubeBlockLocalMatrix.Translation;
                 var worldDirection = impactPos - referenceWorldPosition;
                 var localPosition = Vector3D.TransformNormal(worldDirection, MatrixD.Transpose(cubeBlockLocalMatrix));

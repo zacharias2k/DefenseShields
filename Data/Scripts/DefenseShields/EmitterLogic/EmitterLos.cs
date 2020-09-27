@@ -68,6 +68,9 @@ namespace DefenseShields
 
         private void UpdateLosState(bool updateTestSphere = true)
         {
+            if (_age < 1800)
+                return;
+
             _blocksLos.Clear();
             _vertsSighted.Clear();
 
@@ -75,8 +78,8 @@ namespace DefenseShields
             var testDist = Definition.FieldDist;
 
             Vector3D testDir;
-            if (!_compact) testDir = SubpartRotor.PositionComp.WorldVolume.Center - MyCube.PositionComp.WorldVolume.Center;
-            else testDir = MyCube.PositionComp.WorldMatrix.Up;
+            if (!_compact) testDir = SubpartRotor.PositionComp.WorldAABB.Center - MyCube.PositionComp.WorldAABB.Center;
+            else testDir = MyCube.PositionComp.WorldMatrixRef.Up;
 
             testDir.Normalize();
             var testCenter = MyCube.PositionComp.WorldAABB.Center;
@@ -89,7 +92,7 @@ namespace DefenseShields
                 {
                     var hit = MyGrid.RayCastBlocks(testPos, LosScaledCloud[i]);
 
-                    if (hit.HasValue)
+                    if (hit.HasValue && MyGrid.GetCubeBlock(hit.Value) != MyCube.SlimBlock)
                         _blocksLos[i] = false;
                 }
                 else
@@ -101,6 +104,9 @@ namespace DefenseShields
 
         private void DrawHelper()
         {
+            if (_age < 1800)
+                return;
+
             if (Vector3D.DistanceSquared(MyAPIGateway.Session.Player.Character.PositionComp.WorldAABB.Center, Emitter.PositionComp.WorldAABB.Center) < 2250000)
             {
                 var controller = ShieldComp.DefenseShields;

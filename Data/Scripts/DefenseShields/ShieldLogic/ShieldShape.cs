@@ -34,7 +34,7 @@ namespace DefenseShields
 
         public void MobileUpdate()
         {
-            var checkForNewCenter = MyGrid.PositionComp.WorldVolume.Center;
+            var checkForNewCenter = MyGrid.PositionComp.WorldAABB.Center;
             if (!checkForNewCenter.Equals(MyGridCenter, 1e-4))
             {
                 ShieldComp.GridIsMoving = true;
@@ -134,8 +134,9 @@ namespace DefenseShields
         private void GetShapeAdjust()
         {
             if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield) DsState.State.EllipsoidAdjust = 1f;
-            else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit((MyCubeBlock)Shield, DsState.State.GridHalfExtents, FitBlocks, FitBlockPoints);
-            else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit((MyCubeBlock)Shield, DsState.State.GridHalfExtents, FitBlocks, FitBlockPoints);
+            //else if (!DsSet.Settings.ExtendFit) DsState.State.EllipsoidAdjust = UtilsStatic.CreateNormalFit((MyCubeBlock)Shield, DsState.State.GridHalfExtents, FitBlocks, FitBlockPoints);
+            //else DsState.State.EllipsoidAdjust = UtilsStatic.CreateExtendedFit((MyCubeBlock)Shield, DsState.State.GridHalfExtents, FitBlocks, FitBlockPoints);
+            else DsState.State.EllipsoidAdjust = UtilsStatic.GetFit(DsSet.Settings.Fit);
             FitBlocks.Clear();
         }
 
@@ -151,11 +152,12 @@ namespace DefenseShields
         {
             if (GridIsMobile)
             {
+                var gridMatrix = MyGrid.PositionComp.WorldMatrixRef;
                 _updateMobileShape = false;
                 if (_shapeChanged) CreateMobileShape();
-                DetectionMatrix = ShieldShapeMatrix * MyGrid.WorldMatrix;
+                DetectionMatrix = ShieldShapeMatrix * gridMatrix;
                 DetectionCenter = MyGridCenter;
-                _sQuaternion = Quaternion.CreateFromRotationMatrix(MyGrid.WorldMatrix);
+                _sQuaternion = Quaternion.CreateFromRotationMatrix(gridMatrix);
                 ShieldSphere.Center = DetectionCenter;
                 ShieldSphere.Radius = ShieldSize.AbsMax();
             }
