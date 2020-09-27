@@ -411,7 +411,7 @@
                     if (newSettings.Visible != DsSet.Settings.Visible) 
                         _clientAltered = true;
                 }
-                var newShape = newSettings.ExtendFit != DsSet.Settings.ExtendFit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
+                var newShape = newSettings.Fit != DsSet.Settings.Fit || newSettings.FortifyShield != DsSet.Settings.FortifyShield || newSettings.SphereFit != DsSet.Settings.SphereFit;
                 
                 DsSet.Settings = newSettings;
                 SettingsUpdated = true;

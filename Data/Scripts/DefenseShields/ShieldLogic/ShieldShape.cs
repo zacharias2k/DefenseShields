@@ -98,11 +98,11 @@ namespace DefenseShields
 
             if (DsSet.Settings.SphereFit || DsSet.Settings.FortifyShield)
             {
-                var extend = DsSet.Settings.ExtendFit ? 2 : 1;
+                var extend = DsSet.Settings.Fit > 9 ? 2 : 1;
                 var fortify = DsSet.Settings.FortifyShield ? 3 : 1;
                 var size = expandedAabb.HalfExtents.Max() * fortify;
                 var scaler = 4;
-                if (shieldGrid.GridSizeEnum == MyCubeSize.Small && !DsSet.Settings.ExtendFit) scaler = 5;
+                if (shieldGrid.GridSizeEnum == MyCubeSize.Small && DsSet.Settings.Fit < 10) scaler = 5;
                 var vectorSize = new Vector3D(size, size, size);
                 var fudge = shieldGrid.GridSize * scaler * extend;
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - vectorSize.LengthSquared();
