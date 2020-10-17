@@ -71,7 +71,7 @@ namespace DefenseShields
             CreateShieldShape();
         }
 
-        public void CreateHalfExtents()
+        public void CreateHalfExtents(bool forceUpdate = false)
         {
             _oldGridHalfExtents = DsState.State.GridHalfExtents;
             var myAabb = MyGrid.PositionComp.LocalAABB;
@@ -114,7 +114,7 @@ namespace DefenseShields
                 var blockHalfSize = MyGrid.GridSize * 0.5;
                 DsState.State.ShieldFudge = 0f;
                 var extentsDiff = DsState.State.GridHalfExtents.LengthSquared() - expandedAabb.HalfExtents.LengthSquared();
-                var overThreshold = extentsDiff < -blockHalfSize || extentsDiff > blockHalfSize;
+                var overThreshold = extentsDiff < -blockHalfSize || extentsDiff > blockHalfSize || forceUpdate;
                 if (overThreshold || DsState.State.GridHalfExtents == Vector3D.Zero) DsState.State.GridHalfExtents = expandedAabb.HalfExtents;
             }
             _halfExtentsChanged = !DsState.State.GridHalfExtents.Equals(_oldGridHalfExtents);
@@ -145,7 +145,7 @@ namespace DefenseShields
             FitChanged = false;
             _shapeEvent = false;
             if (!_isServer || !GridIsMobile) return;
-            CreateHalfExtents();
+            CreateHalfExtents(true);
         }
 
         internal void CreateShieldShape()
