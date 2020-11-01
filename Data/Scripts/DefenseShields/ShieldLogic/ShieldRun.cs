@@ -53,6 +53,12 @@ namespace DefenseShields
                             }
                         }
                     }
+
+                    var powerBlockDef = block.BlockDefinition as MyPowerProducerDefinition;
+                    if (powerBlockDef != null)
+                    {
+                        GridMaxPower += powerBlockDef.MaxPowerOutput;
+                    }
                 }
             }
         }
@@ -91,6 +97,12 @@ namespace DefenseShields
                                 break;
                             }
                         }
+                    }
+
+                    var powerBlockDef = block.BlockDefinition as MyPowerProducerDefinition;
+                    if (powerBlockDef != null)
+                    {
+                        GridMaxPower -= powerBlockDef.MaxPowerOutput;
                     }
                 }
             }

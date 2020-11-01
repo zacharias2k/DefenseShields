@@ -50,7 +50,6 @@ namespace DefenseShields
         private void UpdateGridPower()
         {
             GridAvailablePower = 0;
-            GridMaxPower = 0;
             GridCurrentPower = 0;
             _batteryMaxPower = 0;
             _batteryCurrentOutput = 0;
@@ -68,7 +67,6 @@ namespace DefenseShields
                     }
                     else
                     {
-                        GridMaxPower = MyResourceDist.MaxAvailableResourceByType(GId);
                         GridCurrentPower = MyResourceDist.TotalRequiredInputByType(GId);
                         if (!DsSet.Settings.UseBatteries && _batteryBlocks.Count != 0) CalculateBatteryInput();
                     }
@@ -166,11 +164,9 @@ namespace DefenseShields
                     }
                     else
                     {
-                        GridMaxPower += source.MaxOutputByType(GId);
                         GridCurrentPower += source.CurrentOutputByType(GId);
                     }
                 }
-                GridMaxPower += _batteryMaxPower;
                 GridCurrentPower += _batteryCurrentOutput;
             }
         }
