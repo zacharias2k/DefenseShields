@@ -11,10 +11,91 @@ namespace DefenseShields
     using VRage.Game.Components;
     using VRage.ModAPI;
     using VRage.ObjectBuilders;
+    using Sandbox.Definitions;
+    using Sandbox.Game.EntityComponents;
 
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_UpgradeModule), false, "DSControlLarge", "DSControlSmall", "DSControlTable", "NPCControlSB", "NPCControlLB")]
     public partial class DefenseShields : MyGameLogicComponent
     {
+        private void OnFatBlockAdded(MyCubeBlock block)
+        {
+            lock (SubLock)
+            {
+                if (!_isDedicated)
+                {
+                    _functionalBlocks.Add(block);
+
+                    var display = block as IMyTextPanel;
+                    if (display != null)
+                    {
+                        _displayBlocks.Add(display);
+                    }
+                }
+
+                var battery = block as IMyBatteryBlock;
+                if (battery != null)
+                {
+                    _batteryBlocks.Add(battery);
+                }
+
+                var powerBlock = block as IMyPowerProducer;
+                if (powerBlock != null)
+                {
+                    var source = powerBlock.Components.Get<MyResourceSourceComponent>();
+                    if (source != null)
+                    {
+                        foreach (var type in source.ResourceTypes)
+                        {
+                            if (type != MyResourceDistributorComponent.ElectricityId)
+                            {
+                                _powerSources.Add(source);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        private void OnFatBlockRemoved(MyCubeBlock block)
+        {
+            lock (SubLock)
+            {
+                if (!_isDedicated)
+                {
+                    _functionalBlocks.Remove(block);
+
+                    var display = block as IMyTextPanel;
+                    if (display != null)
+                    {
+                        _displayBlocks.Remove(display);
+                    }
+                }
+
+                var battery = block as IMyBatteryBlock;
+                if (battery != null)
+                {
+                    _batteryBlocks.Remove(battery);
+                }
+
+                var powerBlock = block as IMyPowerProducer;
+                if (powerBlock != null)
+                {
+                    var source = powerBlock.Components.Get<MyResourceSourceComponent>();
+                    if (source != null)
+                    {
+                        foreach (var type in source.ResourceTypes)
+                        {
+                            if (type != MyResourceDistributorComponent.ElectricityId)
+                            {
+                                _powerSources.Remove(source);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         #region Simulation
         public override void OnAddedToContainer()
         {
@@ -46,6 +127,15 @@ namespace DefenseShields
                 RegisterEvents();
                 AssignSlots();
                 _resetEntity = true;
+
+                MyGrid.OnFatBlockAdded += OnFatBlockAdded;
+                MyGrid.OnFatBlockRemoved += OnFatBlockRemoved;
+
+                GridMaxPower = 0;
+                foreach (var block in MyGrid.GetFatBlocks())
+                {
+                    OnFatBlockAdded(block);
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in OnAddedToScene: {ex}"); }
         }
@@ -142,6 +232,14 @@ namespace DefenseShields
                 _shellPassive?.Render?.RemoveRenderObjects();
                 _shellActive?.Render?.RemoveRenderObjects();
                 ShieldEnt?.Render?.RemoveRenderObjects();
+
+                MyGrid.OnFatBlockAdded -= OnFatBlockAdded;
+                MyGrid.OnFatBlockRemoved -= OnFatBlockRemoved;
+
+                foreach (var block in MyGrid.GetFatBlocks())
+                {
+                    OnFatBlockRemoved(block);
+                }
             }
             catch (Exception ex) { Log.Line($"Exception in OnRemovedFromScene: {ex}"); }
         }

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using DefenseShields.Support;
 using Sandbox.Game.Entities;
-using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -166,11 +165,6 @@ namespace DefenseShields
             _updateGridDistributor = false;
             lock (SubLock)
             {
-                _powerSources.Clear();
-                _functionalBlocks.Clear();
-                _batteryBlocks.Clear();
-                _displayBlocks.Clear();
-
                 foreach (var grid in ShieldComp.LinkedGrids.Keys)
                 {
                     var mechanical = ShieldComp.SubGrids.Contains(grid);
@@ -192,26 +186,6 @@ namespace DefenseShields
                                     }
                                 }
                             }
-                        }
-
-                        if (!_isDedicated)
-                        {
-                            _functionalBlocks.Add(block);
-                            var display = block as IMyTextPanel;
-                            if (display != null) _displayBlocks.Add(display);
-                        }
-
-                        var battery = block as IMyBatteryBlock;
-                        if (battery != null) _batteryBlocks.Add(battery);
-
-                        var source = block.Components.Get<MyResourceSourceComponent>();
-                        if (source == null) continue;
-
-                        foreach (var type in source.ResourceTypes)
-                        {
-                            if (type != MyResourceDistributorComponent.ElectricityId) continue;
-                            _powerSources.Add(source);
-                            break;
                         }
                     }
                 }
