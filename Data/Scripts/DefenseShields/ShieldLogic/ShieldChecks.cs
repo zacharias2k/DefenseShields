@@ -84,7 +84,7 @@ namespace DefenseShields
             {
                 var gotGroups = MyAPIGateway.GridGroups.GetGroup(MyGrid, GridLinkTypeEnum.Physical);
 
-                if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !SubGridChangeDetect(gotGroups)) 
+                if (gotGroups.Count == ShieldComp.LinkedGrids.Count && !SubGridChangeDetect(gotGroups))
                     return;
 
                 foreach (var s in ShieldComp.SubGrids) Session.Instance.IdToBus.Remove(s.EntityId);
@@ -110,7 +110,8 @@ namespace DefenseShields
 
         private bool SubGridChangeDetect(List<IMyCubeGrid> linkedGrids)
         {
-            for (int i = 0; i < linkedGrids.Count; i++) {
+            for (int i = 0; i < linkedGrids.Count; i++)
+            {
                 var link = (MyCubeGrid)linkedGrids[i];
                 if (!ShieldComp.LinkedGrids.ContainsKey(link))
                     return false;
@@ -161,29 +162,25 @@ namespace DefenseShields
 
         private void BackGroundChecks()
         {
-            var gridDistNeedUpdate = _updateGridDistributor || MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects;
-            _updateGridDistributor = false;
-            lock (SubLock)
+            if (_updateGridDistributor || MyResourceDist?.SourcesEnabled == MyMultipleEnabledEnum.NoObjects)
             {
+                _updateGridDistributor = false;
+
                 foreach (var grid in ShieldComp.LinkedGrids.Keys)
                 {
-                    var mechanical = ShieldComp.SubGrids.Contains(grid);
-                    foreach (var block in grid.GetFatBlocks())
+                    if (ShieldComp.SubGrids.Contains(grid))
                     {
-                        if (mechanical)
+                        foreach (var block in grid.GetFatBlocks())
                         {
-                            if (gridDistNeedUpdate)
+                            var controller = block as MyShipController;
+                            if (controller != null)
                             {
-                                var controller = block as MyShipController;
-                                if (controller != null)
+                                var distributor = controller.GridResourceDistributor;
+                                if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
                                 {
-                                    var distributor = controller.GridResourceDistributor;
-                                    if (distributor.SourcesEnabled != MyMultipleEnabledEnum.NoObjects)
-                                    {
-                                        if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
-                                        MyResourceDist = controller.GridResourceDistributor;
-                                        gridDistNeedUpdate = false;
-                                    }
+                                    if (Session.Enforced.Debug == 3) Log.Line($"Found MyGridDistributor from type:{block.BlockDefinition} - ShieldId [{Shield.EntityId}]");
+                                    MyResourceDist = controller.GridResourceDistributor;
+                                    return;
                                 }
                             }
                         }
